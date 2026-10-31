@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1512" />
+    <meta name="description" content="FERALIS — Batalha livre em mundo aberto 3D. Cace, combine golpes de lâmina e sele feras lendárias para lutar ao seu lado." />
+    <title>FERALIS · Batalha Livre</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game" aria-label="Mundo 3D de Feralis"></canvas>
+      <div id="vignette"></div>
+      <div id="hitFlash"></div>
+      <div id="damageLayer" aria-hidden="true"></div>
+      <div id="loadingVeil">
+        <div class="veil-mark"></div>
+        <p>Despertando Feralis…</p>
+      </div>
+    </div>
+
+    <!-- ══════════════ HUD ══════════════ -->
+    <div id="hud" class="is-hidden" aria-hidden="true">
+      <div class="hud-top">
+        <section class="status panel">
+          <div class="portrait">
+            <span class="portrait-rune">ᛉ</span>
+            <i class="portrait-ring"></i>
+          </div>
+          <div class="status-body">
+            <div class="status-head">
+              <strong>CAÇADOR</strong>
+              <span id="levelLabel">Nv. 1</span>
+            </div>
+            <div class="bar hp"><i id="hpFill"></i><em id="hpText">120 / 120</em></div>
+            <div class="bar st"><i id="stFill"></i><span class="bar-tag">VIGOR</span></div>
+            <div class="bar xp"><i id="xpFill"></i><span class="bar-tag" id="xpText">0 XP</span></div>
+          </div>
+        </section>
+
+        <div class="compass-wrap">
+          <div class="compass">
+            <div class="compass-dial" id="compassDial">
+              <span data-b="0">N</span>
+              <span data-b="45">NE</span>
+              <span data-b="90">L</span>
+              <span data-b="135">SE</span>
+              <span data-b="180">S</span>
+              <span data-b="225">SO</span>
+              <span data-b="270">O</span>
+              <span data-b="315">NO</span>
+            </div>
+            <div class="compass-needle"></div>
+          </div>
+          <div class="region-name" id="regionName">Clareira do Coração</div>
+          <div class="region-sub" id="regionSub">Feralis · Mundo Aberto</div>
+        </div>
+
+        <button id="mobileQuest" class="mobile-quest" aria-label="Abrir diário de campo">
+          <span class="mq-icon" aria-hidden="true">◈</span>
+          <span class="mq-body"><b id="mqTitle">Diário de campo</b><small id="mqProgress">0/4</small></span>
+        </button>
+
+        <aside class="journal panel">
+          <header>
+            <svg class="ico"><use href="#i-journal" /></svg>
+            <span>Diário de campo</span>
+            <em id="questCount">0/4</em>
+          </header>
+          <ul id="questList"></ul>
+        </aside>
+      </div>
+
+      <div id="targetFrame" class="target is-hidden">
+        <div class="target-head">
+          <span class="target-type" id="targetType">BRASA</span>
+          <strong id="targetName">Brasalume</strong>
+          <span class="target-lv" id="targetLv">Nv. 2</span>
+          <span class="target-icon" id="targetIcon">ᛉ</span>
+        </div>
+        <div class="target-bar"><i id="targetHp"></i></div>
+        <div class="target-foot">
+          <span id="targetHint">HP 100%</span>
+          <span class="seal-state" id="targetSeal">SELO INDISPONÍVEL</span>
+        </div>
+      </div>
+
+      <div id="bossBar" class="boss is-hidden">
+        <div class="boss-head">
+          <span>GUARDIÃO</span>
+          <strong id="bossName">Guardião do Alicerce</strong>
+          <em id="bossPhase">FASE I</em>
+        </div>
+        <div class="boss-track"><i id="bossFill"></i><u></u><u></u></div>
+      </div>
+
+      <div class="bottom-left">
+        <section class="companion panel is-empty" id="companionCard">
+          <div class="companion-orb" id="companionOrb"><span id="companionGlyph">✧</span></div>
+          <div class="companion-body">
+            <div class="companion-head">
+              <strong id="companionName">Nenhuma fera</strong>
+              <span id="companionLevel">—</span>
+            </div>
+            <p id="companionState">Sele uma fera selvagem para lutar ao seu lado.</p>
+            <div class="bond"><i id="bondFill"></i></div>
+            <div class="roster" id="roster"></div>
+          </div>
+        </section>
+      </div>
+
+      <div id="minimapWrap">
+        <canvas id="minimap" width="320" height="320" aria-label="Mapa do mundo"></canvas>
+        <div class="minimap-ring"></div>
+        <div class="minimap-n">N</div>
+        <div class="minimap-label" id="minimapLabel">FERALIS</div>
+      </div>
+
+      <div id="prompt" class="prompt is-hidden">
+        <span class="key" id="promptKey">F</span>
+        <div><strong id="promptTitle">Invocar Guardião</strong><small id="promptSub">Altar do Alicerce</small></div>
+      </div>
+
+      <div id="hints" class="hints">
+        <span><i class="key">WASD</i> mover</span>
+        <span><i class="key">CLIQUE</i> golpe</span>
+        <span><i class="key">ESPAÇO</i> esquiva</span>
+        <span><i class="key">E</i> selo</span>
+        <span><i class="key">Q</i> mirar</span>
+        <span><i class="key">C</i> fera</span>
+        <span><i class="key">F</i> interagir</span>
+        <span><i class="key">ESC</i> pausa</span>
+      </div>
+
+      <div id="toasts" aria-live="polite"></div>
+
+      <div id="touchUI" class="touch-ui is-hidden">
+        <button class="tbtn tbtn-pause" data-action="pause" aria-label="Pausar">II</button>
+        <div id="joystick" class="joystick"><div class="joy-base"></div><div class="joy-knob" id="joyKnob"></div></div>
+        <div class="touch-actions">
+          <button class="tbtn tbtn-small" data-action="lock" aria-label="Mirar"><svg><use href="#i-target" /></svg></button>
+          <button class="tbtn tbtn-small" data-action="seal" aria-label="Lançar selo"><svg><use href="#i-seal" /></svg></button>
+          <button class="tbtn tbtn-small" data-action="companion" aria-label="Invocar fera"><svg><use href="#i-paw" /></svg></button>
+          <button class="tbtn tbtn-small" data-action="dodge" aria-label="Esquivar"><svg><use href="#i-dodge" /></svg></button>
+          <button class="tbtn tbtn-heavy" data-action="heavy" aria-label="Golpe pesado"><svg><use href="#i-burst" /></svg></button>
+          <button class="tbtn tbtn-attack" data-action="attack" aria-label="Atacar"><svg><use href="#i-sword" /></svg></button>
+        </div>
+      </div>
+
+      <div id="combo" class="combo"><b id="comboNum">2</b><span>COMBO</span></div>
+      <div id="capturePanel" class="capture-panel is-hidden">
+        <div class="capture-ring"><i id="captureFill"></i><span id="captureGlyph">◈</span></div>
+        <div><strong id="captureTitle">SELANDO…</strong><small id="captureSub">Mantenha o vínculo</small></div>
+      </div>
+    </div>
+
+    <!-- ══════════════ TITLE ══════════════ -->
+    <div id="titleScreen">
+      <div class="title-scrim"></div>
+      <div class="title-top">
+        <div class="brand-mini">
+          <span class="brand-rune">ᚠ</span>
+          <span>FERALIS</span>
+        </div>
+        <div class="title-meta">
+          <span class="dot live"></span> MUNDO ABERTO · AÇÃO
+          <em>v1.0</em>
+        </div>
+      </div>
+
+      <div class="title-content">
+        <p class="eyebrow"><span></span> RPG DE AÇÃO · CAPTURA DE FERAS</p>
+        <h1>FERA<span>LIS</span></h1>
+        <div class="subline">Batalha livre. Feras lendárias. Um mundo sem fronteiras.</div>
+        <p class="lede">Cace no mundo aberto, encadeie golpes de lâmina e sele feras para lutar ao seu lado. Sem turnos. Sem telas de espera. Só você, sua lâmina e o instinto.</p>
+
+        <div class="features">
+          <div class="feature"><span class="f-ico">⚔</span><div><strong>Hack &amp; slash</strong><small>combos, esquiva e impacto</small></div></div>
+          <div class="feature"><span class="f-ico">◈</span><div><strong>Sele feras</strong><small>captura em tempo real</small></div></div>
+          <div class="feature"><span class="f-ico">✧</span><div><strong>3 guardiões</strong><small>altare, enfrente, restaure</small></div></div>
+        </div>
+
+        <div class="title-actions">
+          <button id="playBtn" class="play-btn" aria-label="Play">
+            <span class="play-ico">▶</span>
+            <span class="play-text">JOGAR</span>
+            <span class="play-arrow">→</span>
+          </button>
+          <div class="play-note">
+            <span>Grátis no navegador</span>
+            <small>PC · celular · tablet</small>
+          </div>
+        </div>
+
+        <div class="controls-strip">
+          <span><i>WASD</i> mover</span>
+          <span><i>MOUSE</i> câmera</span>
+          <span><i>CLIQUE</i> atacar</span>
+          <span><i>ESPAÇO</i> esquivar</span>
+          <span><i>E</i> selar</span>
+          <span><i>Q</i> mirar</span>
+        </div>
+      </div>
+
+      <div class="title-bottom">
+        <div class="world-facts">
+          <div><b>440m</b><small>Mundo contínuo</small></div>
+          <div><b>06</b><small>Espécies de fera</small></div>
+          <div><b>03</b><small>Guardiões</small></div>
+          <div><b>∞</b><small>Combos</small></div>
+        </div>
+        <p class="credit">Uma aventura original. Todos os modelos e sons são gerados em tempo real.</p>
+      </div>
+
+      <div class="title-hint-mobile">Arraste para olhar · toque nos botões para lutar</div>
+    </div>
+
+    <!-- ══════════════ PAUSE ══════════════ -->
+    <div id="pauseScreen" class="overlay is-hidden">
+      <div class="pause-card panel">
+        <p class="eyebrow"><span></span> INTERVALO</p>
+        <h2>Caçada pausada</h2>
+        <p>O mundo espera. Respire fundo e volte para a batalha.</p>
+        <div class="pause-stats">
+          <div><span>Feras seladas</span><b id="pauseTamed">0</b></div>
+          <div><span>Nível</span><b id="pauseLevel">1</b></div>
+          <div><span>Guardiões</span><b id="pauseBosses">0/3</b></div>
+        </div>
+        <div class="pause-buttons">
+          <button id="resumeBtn" class="btn-primary">Continuar</button>
+          <button id="soundBtn" class="btn-ghost">Som: ligado</button>
+        </div>
+        <div class="pause-controls">
+          <span><i>WASD</i> mover</span><span><i>CLIQUE</i> atacar</span><span><i>DIR.</i> pesado</span>
+          <span><i>ESPAÇO</i> esquivar</span><span><i>E</i> selar</span><span><i>Q</i> mirar</span>
+          <span><i>C</i> fera</span><span><i>F</i> interagir</span><span><i>ESC</i> pausa</span>
+        </div>
+        <small class="pause-tip">Dica: esquivar no instante do golpe abre uma janela de contra-ataque.</small>
+      </div>
+    </div>
+
+    <!-- ══════════════ DEATH ══════════════ -->
+    <div id="deathScreen" class="overlay is-hidden">
+      <div class="death-card">
+        <p class="eyebrow"><span></span> A CAÇADA TERMINA AQUI</p>
+        <h2>Você caiu.</h2>
+        <p>Mas Feralis não deixa ninguém para trás. O vínculo com suas feras permanece.</p>
+        <div class="death-stats">
+          <div><span>Feras derrubadas</span><b id="deathKills">0</b></div>
+          <div><span>Feras seladas</span><b id="deathTamed">0</b></div>
+        </div>
+        <button id="respawnBtn" class="btn-primary">Renascer no acampamento</button>
+      </div>
+    </div>
+
+    <div id="banner" class="banner is-hidden">
+      <span class="banner-line"></span>
+      <strong id="bannerTitle">OBJETIVO CONCLUÍDO</strong>
+      <small id="bannerSub">O vínculo se fortalece</small>
+      <span class="banner-line"></span>
+    </div>
+
+    <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden">
+      <symbol id="i-sword" viewBox="0 0 24 24"><path d="M14.5 3.5 21 3l-.5 6.5L9 21l-3.5.8L3 19l2.5-4.5L14.5 3.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m5 15 4 4M12 14l-2-2M15.5 10.5l-2-2" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+      <symbol id="i-burst" viewBox="0 0 24 24"><path d="M12 2l2.2 6.1L20 5l-2.5 5.9L23 13l-6.2 1.4L20 20l-6-2.5L12 24l-2-6.5L4 20l3.2-5.6L1 13l5.5-2.1L4 5l5.8 3.1L12 2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+      <symbol id="i-dodge" viewBox="0 0 24 24"><path d="M5 20c6 1 12-3 13-9m0 0-3 3m3-3 2.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+      <symbol id="i-seal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M8 8l2 2M14 14l2 2M16 8l-2 2M10 14l-2 2" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></symbol>
+      <symbol id="i-paw" viewBox="0 0 24 24"><ellipse cx="12" cy="16" rx="5" ry="4" fill="none" stroke="currentColor" stroke-width="1.7"/><ellipse cx="5.5" cy="10" rx="2.1" ry="2.7" fill="none" stroke="currentColor" stroke-width="1.5"/><ellipse cx="18.5" cy="10" rx="2.1" ry="2.7" fill="none" stroke="currentColor" stroke-width="1.5"/><ellipse cx="9" cy="5.5" rx="2" ry="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/><ellipse cx="15" cy="5.5" rx="2" ry="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="1.6"/></symbol>
+      <symbol id="i-journal" viewBox="0 0 24 24"><path d="M5 4h13a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2V4Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4v16M11 9h6M11 13h6" stroke="currentColor" stroke-width="1.5"/></symbol>
+    </svg>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
