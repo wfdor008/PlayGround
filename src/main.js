@@ -181,7 +181,7 @@ class Game {
 
   setupQuests() {
     this.quests = [
-      { id: 'tree', title: 'Alcance a Árvore do Coração', desc: 'Siga a trilha dourada até o centro do mundo.', done: false, count: 0, target: 0 },
+      { id: 'tree', title: 'Alcance a Árvore do Coração', desc: 'Siga a trilha dourada até o centro do mundo.', done: false, count: 0, target: 1 },
       { id: 'slay', title: 'Domine as feras selvagens', desc: 'Enfrente criaturas no território aberto.', done: false, count: 0, target: 6 },
       { id: 'seal', title: 'Sele sua primeira fera', desc: 'Reduza o HP e lance o Selo com E.', done: false, count: 0, target: 1 },
       { id: 'guardians', title: 'Restaure os três altares', desc: 'Invoque e derrote os Guardiões.', done: false, count: 0, target: 3 },

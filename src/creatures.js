@@ -947,7 +947,7 @@ export class Companion {
     } else {
       const forward = new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw))
       const right = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw))
-      desired = player.position.clone().addScaledVector(forward, -2.2).addScaledVector(right, -1.6)
+      desired = player.position.clone().addScaledVector(forward, 1.8).addScaledVector(right, 1.6)
     }
     const dx = desired.x - this.position.x
     const dz = desired.z - this.position.z
