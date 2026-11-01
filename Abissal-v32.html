@@ -83,7 +83,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 const cv=document.getElementById('c'),g=cv.getContext('2d');
 let GLC=null;
 /* ---------- configurações do jogador (gráfico, áudio, sensibilidade) ---------- */
-const CFG_DEF={q:(typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches)?'medio':'alto',vol:70,music:true,sens:100,fps:true,auto:true,sfx:true};
+const CFG_DEF={q:(typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches)?'medio':'alto',vol:70,music:true,sens:100,fps:true,auto:true,sfx:true,lang:'pt'};
 let CFG=(()=>{try{return Object.assign({},CFG_DEF,JSON.parse(localStorage.getItem('abissal_cfg')||'{}'))}catch(e){return Object.assign({},CFG_DEF)}})();
 const QSCALE={baixo:.6,medio:.8,alto:1};
 const sensK=()=>CFG.sens/100;
@@ -92,6 +92,91 @@ function saveCfg(){try{localStorage.setItem('abissal_cfg',JSON.stringify(CFG))}c
 const STAR_CACHE=new Map(),NEB_CACHE=new Map(),GLOW_CACHE=new Map();let TITLE_BG=null,TITLE_BG_KEY='';
 /* 1,85 já cobre telas retina sem gastar 30% a mais de pixels que 2,0 (ganho real em celular) */
 let VW=innerWidth,VH=innerHeight,DPR=Math.min(1.85,devicePixelRatio||1);
+/* ---------- idiomas (PT / EN / ES) ----------
+   Os textos da UI usam a chave em português e a função tr() devolve a versão do idioma selecionado.
+   Idioma fica salvo em CFG.lang e no localStorage. Textos sem tradução caem de volta ao português. */
+const LANG_LABELS={pt:'Português',en:'English',es:'Español'};
+const TEXTOS={
+ /* título / menu principal */
+ 'Dinâmico Espace Secure':{pt:'Dinâmico Espace Secure',en:'Dinâmico Espace Secure',es:'Dinâmico Espace Secure'},
+ 'Iniciar novo jogo':{pt:'Iniciar novo jogo',en:'Start new game',es:'Iniciar nuevo juego'},
+ 'Carregar jogo':{pt:'Carregar jogo',en:'Load game',es:'Cargar partida'},
+ 'Gráficos':{pt:'Gráficos',en:'Graphics',es:'Gráficos'},
+ 'Áudio':{pt:'Áudio',en:'Audio',es:'Audio'},
+ 'Sensibilidade':{pt:'Sensibilidade',en:'Sensitivity',es:'Sensibilidad'},
+ 'Fechar jogo':{pt:'Fechar jogo',en:'Close game',es:'Cerrar juego'},
+ 'Idioma':{pt:'Idioma',en:'Language',es:'Idioma'},
+ /* HUD / status */
+ 'Créditos':{pt:'Créditos',en:'Credits',es:'Créditos'},
+ 'Oxigênio':{pt:'Oxigênio',en:'Oxygen',es:'Oxígeno'},
+ 'Casco':{pt:'Casco',en:'Hull',es:'Casco'},
+ 'Arma':{pt:'Arma',en:'Weapon',es:'Arma'},
+ 'Jato':{pt:'Jato',en:'Jet',es:'Jet'},
+ 'Módulos':{pt:'Módulos',en:'Modules',es:'Módulos'},
+ 'Sem proteção':{pt:'Sem proteção',en:'No protection',es:'Sin protección'},
+ 'Bio':{pt:'BIO',en:'BIO',es:'BIO'},
+ 'Poeira':{pt:'Poeira',en:'Dust',es:'Polvo'},
+ 'Luz':{pt:'Luz',en:'Light',es:'Luz'},
+ 'Nenhuma':{pt:'nenhuma',en:'none',es:'ninguna'},
+ /* avisos e mensagens comuns */
+ 'Jogo salvo':{pt:'Jogo salvo',en:'Game saved',es:'Juego guardado'},
+ 'Não foi possível salvar':{pt:'Não foi possível salvar',en:'Could not save',es:'No se pudo guardar'},
+ 'Gráfico reduzido para':{pt:'Gráfico reduzido para',en:'Graphics reduced to',es:'Gráficos reducidos a'},
+ 'para manter o FPS':{pt:'para manter o FPS',en:'to keep FPS',es:'para mantener los FPS'},
+ 'Pausado':{pt:'Pausado',en:'Paused',es:'Pausado'},
+ 'Continuar':{pt:'Continuar',en:'Resume',es:'Continuar'},
+ 'Salvar jogo':{pt:'Salvar jogo',en:'Save game',es:'Guardar partida'},
+ 'Áudio e gráficos':{pt:'Áudio e gráficos',en:'Audio and graphics',es:'Audio y gráficos'},
+ 'Editor de HUD':{pt:'Editor de HUD',en:'HUD Editor',es:'Editor de HUD'},
+ 'Menu principal (sem salvar)':{pt:'Menu principal (sem salvar)',en:'Main menu (no save)',es:'Menú principal (sin guardar)'},
+ 'Controles':{pt:'Controles',en:'Controls',es:'Controles'},
+ 'Voltar':{pt:'Voltar',en:'Back',es:'Volver'},
+ 'Música de fundo':{pt:'Música de fundo',en:'Background music',es:'Música de fondo'},
+ 'Efeitos sonoros':{pt:'Efeitos sonoros',en:'Sound effects',es:'Efectos de sonido'},
+ 'Qualidade':{pt:'Qualidade',en:'Quality',es:'Calidade'},
+ 'Contador de FPS':{pt:'Contador de FPS',en:'FPS counter',es:'Contador de FPS'},
+ 'Diário':{pt:'Diário',en:'Journal',es:'Diario'},
+ /* criação de personagem */
+ 'Criar personagem':{pt:'Criar personagem',en:'Create character',es:'Crear personaje'},
+ 'Editar personagem':{pt:'Editar personagem',en:'Edit character',es:'Editar personaje'},
+ 'Passo':{pt:'Passo',en:'Step',es:'Paso'},
+ 'de':{pt:'de',en:'of',es:'de'},
+ 'Identidade':{pt:'Identidade',en:'Identity',es:'Identidad'},
+ 'Corpo':{pt:'Corpo',en:'Body',es:'Cuerpo'},
+ 'Aparência':{pt:'Aparência',en:'Appearance',es:'Apariencia'},
+ 'Voz':{pt:'Voz',en:'Voice',es:'Voz'},
+ 'Equipamento':{pt:'Equipamento',en:'Equipment',es:'Equipamiento'},
+ 'Nome':{pt:'Nome',en:'Name',es:'Nombre'},
+ 'Gênero':{pt:'Gênero',en:'Gender',es:'Género'},
+ 'Raça':{pt:'Raça',en:'Race',es:'Raza'},
+ 'Origem':{pt:'Origem',en:'Origin',es:'Origen'},
+ 'Altura':{pt:'Altura',en:'Height',es:'Altura'},
+ 'Cabelo':{pt:'Cabelo',en:'Hair',es:'Cabello'},
+ 'Roupa':{pt:'Roupa',en:'Clothes',es:'Ropa'},
+ 'Traje principal':{pt:'Traje principal',en:'Main suit',es:'Traje principal'},
+ 'Resumo':{pt:'Resumo',en:'Summary',es:'Resumo'},
+ 'Aleatório':{pt:'Aleatório',en:'Random',es:'Aleatorio'},
+ 'Próximo':{pt:'Próximo',en:'Next',es:'Siguiente'},
+ 'Pronto':{pt:'Pronto',en:'Done',es:'Listo'},
+ 'Testar voz':{pt:'Testar voz',en:'Test voice',es:'Probar voz'},
+ /* combate / oficina / inventário */
+ 'Oficina':{pt:'Oficina',en:'Workshop',es:'Taller'},
+ 'Inventário':{pt:'Inventário',en:'Inventory',es:'Inventario'},
+ 'Fabricar':{pt:'Fabricar',en:'Craft',es:'Fabricar'},
+ 'Melhorar':{pt:'Melhorar',en:'Upgrade',es:'Mejorar'},
+ 'Equipada':{pt:'Equipada',en:'Equipped',es:'Equipada'},
+ 'Desequipar arma':{pt:'Desequipar arma',en:'Unequip weapon',es:'Desequipar arma'},
+ 'Arma não está no inventário':{pt:'Arma não está no inventário',en:'Weapon not in inventory',es:'El arma no está en el inventário'},
+ 'Nenhuma arma no inventário':{pt:'Nenhuma arma no inventário',en:'No weapon in inventory',es:'Ningún arma en el inventario'},
+ 'Dano':{pt:'Dano',en:'Damage',es:'Daño'},
+ 'Alcance':{pt:'Alcance',en:'Range',es:'Alcance'},
+ 'Cadência':{pt:'Cadência',en:'Rate of fire',es:'Cadencia'},
+ 'Custo/tiro':{pt:'Custo/tiro',en:'Cost/shot',es:'Costo/disparo'},
+ 'à distância':{pt:'à distância',en:'ranged',es:'a distancia'},
+ 'corpo a corpo':{pt:'corpo a corpo',en:'melee',es:'cuerpo a cuerpo'},
+};
+function tr(k){const T=TEXTOS[k];if(!T)return k;const l=CFG.lang||'pt';return T[l]||T.pt||k}
+function trP(k,a){return tr(k).replace(/%s/g,a)}
 function fit(){VW=innerWidth;VH=innerHeight;DPR=Math.min(1.85,devicePixelRatio||1)*(QSCALE[CFG.q]||1);cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);g.setTransform(DPR,0,0,DPR,0,0);if(GLC){GLC.width=cv.width;GLC.height=cv.height}STAR_CACHE.clear();NEB_CACHE.clear();TITLE_BG=null}
 addEventListener('resize',fit);fit();
 const $=id=>document.getElementById(id);
